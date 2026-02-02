@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ProLeague Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { background: #020617; color: white; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .glass { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .active-tab { color: #818cf8; border-bottom: 2px solid #818cf8; font-weight: 900; }
+        input { background: #0f172a !important; color: white; border: 1px solid #334155 !important; outline: none; }
+    </style>
+</head>
+<body class="pb-28">
+
+    <section id="auth-screen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="glass p-8 rounded-[3rem] w-full max-w-sm text-center">
+            <h1 class="text-3xl font-black italic text-indigo-500 mb-8 uppercase tracking-widest">ProLeague</h1>
+            <div class="space-y-3">
+                <div id="signup-only"><input type="text" id="reg-name" placeholder="Full Name" class="w-full p-4 rounded-2xl"></div>
+                <input type="email" id="auth-email" placeholder="Email" class="w-full p-4 rounded-2xl">
+                <input type="password" id="auth-pass" placeholder="Password" class="w-full p-4 rounded-2xl">
+                <button onclick="handleAuth()" id="main-auth-btn" class="w-full bg-indigo-600 p-4 rounded-2xl font-black uppercase text-sm">Claim ₹100 Bonus</button>
+                <p id="auth-toggle-text" class="text-[10px] text-slate-500 font-bold uppercase mt-4 cursor-pointer" onclick="toggleAuthMode()">Member? Login</p>
+            </div>
+        </div>
+    </section>
+
+    <main id="app" class="hidden">
+        <header class="p-6 flex justify-between items-center sticky top-0 bg-slate-950/90 backdrop-blur-md z-50">
+            <h2 class="font-black italic text-indigo-400">ProLeague</h2>
+            <div class="glass px-4 py-2 rounded-xl text-green-400 font-black text-sm" id="nav-bal">₹0</div>
+        </header>
+
+        <section id="tab-arena" class="tab-view p-5 space-y-5"></section>
+        <section id="tab-live" class="tab-view hidden p-5 space-y-4"></section>
+        <section id="tab-results" class="tab-view hidden p-5 space-y-4"></section>
+
+        <section id="tab-wallet" class="tab-view hidden p-5">
+            <div class="glass p-8 rounded-[2.5rem] text-center mb-6">
+                <p class="text-[10px] uppercase font-black opacity-40 mb-1">Balance</p>
+                <h3 class="text-4xl font-black mb-6" id="wallet-bal">₹0</h3>
+                <div class="flex gap-2">
+                    <button onclick="openModal('dep-modal')" class="flex-1 bg-green-600 py-3 rounded-xl font-black uppercase text-[10px]">Deposit</button>
+                    <button onclick="openModal('with-modal')" class="flex-1 bg-red-600 py-3 rounded-xl font-black uppercase text-[10px]">Withdraw</button>
+                </div>
+            </div>
+            <div id="trans-list" class="space-y-2"></div>
+        </section>
+
+        <section id="tab-profile" class="tab-view hidden p-5">
+            <div class="glass p-10 rounded-[3rem] text-center">
+                <div class="w-20 h-20 bg-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-black shadow-xl shadow-indigo-500/20" id="u-initial">?</div>
+                <h3 class="font-black uppercase text-xl mb-1" id="u-name">Player</h3>
+                <p id="u-email" class="text-xs text-slate-500 mb-8 font-medium italic"></p> <button onclick="logout()" class="w-full py-4 bg-red-500/10 text-red-500 rounded-2xl font-black uppercase text-[10px] border border-red-500/20">Logout</button>
+            </div>
+        </section>
+
+        <nav class="fixed bottom-0 inset-x-0 glass flex justify-around p-5 rounded-t-[2.5rem] z-50">
+            <button onclick="switchTab('tab-arena', this)" class="active-tab text-[9px] font-black uppercase">Arena</button>
+            <button onclick="switchTab('tab-live', this)" class="text-slate-500 text-[9px] font-black uppercase">Live</button>
+            <button onclick="switchTab('tab-results', this)" class="text-slate-500 text-[9px] font-black uppercase">Results</button>
+            <button onclick="switchTab('tab-wallet', this)" class="text-slate-500 text-[9px] font-black uppercase">Wallet</button>
+            <button onclick="switchTab('tab-profile', this)" class="text-slate-500 text-[9px] font-black uppercase">Profile</button>
+        </nav>
+    </main>
+
+    <div id="dep-modal" class="fixed inset-0 bg-black/95 hidden flex items-center justify-center p-6 z-[60]">
+        <div class="glass p-8 rounded-[3rem] w-full max-w-sm">
+            <input type="number" id="d-amt" placeholder="Amount ₹" class="w-full p-4 rounded-2xl mb-3">
+            <input type="text" id="d-utr" placeholder="Transaction UTR" class="w-full p-4 rounded-2xl mb-6">
+            <button onclick="handleDeposit()" class="w-full bg-indigo-600 p-4 rounded-2xl font-black uppercase text-xs">Submit</button>
+            <button onclick="closeModal('dep-modal')" class="w-full mt-4 text-[10px] text-slate-500 uppercase font-bold">Close</button>
+        </div>
+    </div>
+
+    <div id="with-modal" class="fixed inset-0 bg-black/95 hidden flex items-center justify-center p-6 z-[60]">
+        <div class="glass p-8 rounded-[3rem] w-full max-w-sm">
+            <input type="number" id="w-amt" placeholder="Amount ₹" class="w-full p-4 rounded-2xl mb-3">
+            <input type="text" id="w-upi" placeholder="Your UPI ID" class="w-full p-4 rounded-2xl mb-6">
+            <button onclick="handleWithdraw()" class="w-full bg-red-600 p-4 rounded-2xl font-black uppercase text-xs">Withdraw</button>
+            <button onclick="closeModal('with-modal')" class="w-full mt-4 text-[10px] text-slate-500 uppercase font-bold">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        let isLoginMode = false;
+        let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+        function isFrozen() {
+            const u = JSON.parse(localStorage.getItem(`user_${currentUser.email}`));
+            if (u.isFrozen) { alert("❄️ Account Frozen by Admin."); return true; }
+            return false;
+        }
+
+        function format12h(t) {
+            if(!t) return "TBD";
+            let [h, m] = t.split(':');
+            let s = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return `${h}:${m} ${s}`;
+        }
+
+        function handleAuth() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            const name = document.getElementById('reg-name').value;
+            if(isLoginMode) {
+                let user = JSON.parse(localStorage.getItem(`user_${email}`));
+                if(user && user.password === pass) { localStorage.setItem('currentUser', JSON.stringify({email})); location.reload(); }
+                else { alert("Invalid Credentials"); }
+            } else {
+                if(!name || !email || !pass) return alert("Fill all fields");
+                const newUser = { name, email, password: pass, balance: 100, isFrozen: false, 
+                transactions: [{id: Date.now(), desc: "Welcome Bonus 🎁", amount: 100, type: 'plus', status: 'success', date: new Date().toLocaleDateString()}]};
+                localStorage.setItem(`user_${email}`, JSON.stringify(newUser));
+                localStorage.setItem('currentUser', JSON.stringify({email})); location.reload();
+            }
+        }
+
+        function joinMatch(id, fee) {
+            if(isFrozen()) return;
+            let u = JSON.parse(localStorage.getItem(`user_${currentUser.email}`));
+            let list = JSON.parse(localStorage.getItem('global_tournaments'));
+            let m = list.find(x => x.id === id);
+            if(u.balance < fee) return alert("Low balance");
+            if(m.joinedPlayers.length >= m.capacity) return alert("Match Full");
+            u.balance -= fee; m.joinedPlayers.push(currentUser.email);
+            u.transactions.push({id: Date.now(), desc: `Joined: ${m.title}`, amount: fee, type: 'minus', status: 'success', date: new Date().toLocaleDateString()});
+            localStorage.setItem(`user_${currentUser.email}`, JSON.stringify(u));
+            localStorage.setItem('global_tournaments', JSON.stringify(list)); render();
+        }
+
+        function handleWithdraw() {
+            if(isFrozen()) return;
+            const amt = parseFloat(document.getElementById('w-amt').value);
+            const upi = document.getElementById('w-upi').value;
+            let u = JSON.parse(localStorage.getItem(`user_${currentUser.email}`));
+            if(u.balance < amt) return alert("Insufficient Balance");
+            const txId = Date.now(); u.balance -= amt;
+            u.transactions.push({ id: txId, desc: "Withdrawal Pending ⏳", amount: amt, type: 'minus', status: 'pending', date: new Date().toLocaleDateString() });
+            localStorage.setItem(`user_${currentUser.email}`, JSON.stringify(u));
+            let p = JSON.parse(localStorage.getItem('pending_withdrawals')) || [];
+            p.push({ id: txId, user: currentUser.email, amount: amt, upi: upi });
+            localStorage.setItem('pending_withdrawals', JSON.stringify(p));
+            closeModal('with-modal'); render();
+        }
+
+        function handleDeposit() {
+            const amt = document.getElementById('d-amt').value;
+            const utr = document.getElementById('d-utr').value;
+            const txId = Date.now(); let u = JSON.parse(localStorage.getItem(`user_${currentUser.email}`));
+            u.transactions.push({ id: txId, desc: "Deposit Pending ⏳", amount: amt, type: 'plus', status: 'pending', date: new Date().toLocaleDateString() });
+            localStorage.setItem(`user_${currentUser.email}`, JSON.stringify(u));
+            let p = JSON.parse(localStorage.getItem('pending_deposits')) || [];
+            p.push({ id: txId, user: currentUser.email, amount: amt, utr: utr });
+            localStorage.setItem('pending_deposits', JSON.stringify(p));
+            closeModal('dep-modal'); render();
+        }
+
+        function render() {
+            if(!currentUser) return;
+            const u = JSON.parse(localStorage.getItem(`user_${currentUser.email}`));
+            const ms = JSON.parse(localStorage.getItem('global_tournaments')) || [];
+            
+            document.getElementById('nav-bal').innerText = "₹" + u.balance;
+            document.getElementById('wallet-bal').innerText = "₹" + u.balance;
+            document.getElementById('u-name').innerText = u.name;
+            document.getElementById('u-initial').innerText = u.name[0];
+            document.getElementById('u-email').innerText = u.email;
+
+            // Arena
+            document.getElementById('tab-arena').innerHTML = ms.filter(m => m.status === 'active' && !m.joinedPlayers.includes(currentUser.email)).map(m => `
+                <div class="glass p-6 rounded-[2.5rem] border-l-4 ${m.joinedPlayers.length >= m.capacity ? 'border-red-500 opacity-50' : 'border-indigo-500'}">
+                    <div class="flex justify-between mb-4">
+                        <p class="text-[10px] font-black uppercase text-indigo-400">${m.title}</p>
+                        <p class="text-[8px] opacity-60 font-black">${m.joinedPlayers.length}/${m.capacity}</p>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-bold opacity-70 mb-5">
+                        <span>Fee ₹${m.fee}</span><span>Prize ₹${m.prize}</span><span>${format12h(m.time)}</span>
+                    </div>
+                    <button onclick="joinMatch(${m.id}, ${m.fee})" class="w-full bg-indigo-600 py-3 rounded-2xl font-black uppercase text-[10px]">${m.joinedPlayers.length >= m.capacity ? 'Full' : 'Join'}</button>
+                </div>`).join('') || '<p class="text-center opacity-30 py-20 uppercase text-xs">No New Matches</p>';
+
+            // Live
+            document.getElementById('tab-live').innerHTML = ms.filter(m => m.joinedPlayers.includes(currentUser.email) && m.status === 'active').map(m => `
+                <div class="glass p-5 rounded-[2rem] border-l-4 border-yellow-500 text-[10px]">
+                    <p class="font-black uppercase mb-2 text-yellow-500">${m.title}</p>
+                    <p>Room ID: <span class="text-indigo-400 font-black">${m.roomId || 'Wait for Admin'}</span></p>
+                    <p>Password: <span class="text-indigo-400 font-black">${m.roomPass || 'Wait...'}</span></p>
+                </div>`).join('') || '<p class="text-center opacity-30 py-20 uppercase text-xs">Join a match first</p>';
+
+            // Results
+            document.getElementById('tab-results').innerHTML = ms.filter(m => m.status === 'completed').map(m => `
+                <div class="glass p-5 rounded-[2rem] border-l-4 border-green-500 text-[10px]">
+                    <p class="opacity-50 uppercase">${m.title}</p>
+                    <p class="font-black mt-1">Winner: <span class="text-indigo-400 italic">${m.winnerName}</span></p>
+                    <p class="text-green-500 font-black">Prize: ₹${m.prize}</p>
+                </div>`).reverse().join('') || '<p class="text-center opacity-30 py-20 uppercase text-xs">Results soon</p>';
+
+            // Wallet
+            document.getElementById('trans-list').innerHTML = u.transactions.map(t => {
+                let col = t.status === 'success' ? 'border-green-500' : (t.status === 'rejected' ? 'border-red-600' : 'border-yellow-500/50');
+                return `<div class="glass p-4 rounded-xl flex justify-between items-center text-[10px] mb-2 border-l-2 ${col}">
+                    <span class="font-black uppercase">${t.desc}</span>
+                    <span class="${t.status==='rejected'?'text-red-600':(t.type==='plus'?'text-green-400':'text-red-400')} font-black">
+                        ${t.status==='rejected'?'Refunded':'₹'+t.amount}
+                    </span>
+                </div>`;
+            }).reverse().join('');
+        }
+
+        function toggleAuthMode() { isLoginMode = !isLoginMode; document.getElementById('signup-only').style.display = isLoginMode ? 'none' : 'block'; document.getElementById('main-auth-btn').innerText = isLoginMode ? "Login" : "Claim ₹100 Bonus"; }
+        function switchTab(id, btn) { document.querySelectorAll('.tab-view').forEach(t => t.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('nav button').forEach(b => b.classList.replace('active-tab', 'text-slate-500')); btn.classList.replace('text-slate-500', 'active-tab'); render(); }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function logout() { localStorage.removeItem('currentUser'); location.reload(); }
+        if(currentUser) { document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); render(); }
+    </script>
+</body>
+</html>
